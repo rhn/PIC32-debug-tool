@@ -9,7 +9,7 @@ This projects aims to create an open-source PIC32-based USB adapter, useful for 
 The entire toolchain is open source
 * The MCU definitions and how to setup an environment can be found here: [Toolchain](https://gitlab.com/rhn/pic32-parts-free)
 * The compiler is standard upstream GCC for mipsel. You can find how to set it up in the link above
-* The USB stack is [M-Stack](https://gitlab.com/rhn/pic32-parts-free)
+* The USB stack is [M-Stack](https://github.com/signal11/m-stack)
 
 ## Currently implemented features
 
