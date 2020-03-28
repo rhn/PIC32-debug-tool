@@ -21,7 +21,10 @@
 #include <usb_config.h>
 #include <usb_ch9.h>
 #include <usb_cdc.h>
-
+// COMMS - usb and UART
+#include <COMMS.h>
+// Interrupts
+#include <interrupt.h>
 
 
 
@@ -60,6 +63,7 @@ void setup(){
 	SystemConfig(80000000L, 1);	// Set to 80MHz
 #endif
 
+	GPIODrv_init();
 	LED_init();
 	BTN_init();
 	UARTDrv_Init(115200);
@@ -78,6 +82,9 @@ void setup(){
 	IPC11bits.USBIP = 4;
 #endif
 
+#ifdef USB_USE_INTERRUPTS
+//	IEC1bits.USBIE = 1;
+#endif
 
 }
 
@@ -107,46 +114,11 @@ int main(){
 
 	for(;;){
 
-		// Send data to the PC if anything in buffer
-		if (usb_is_configured() && !usb_in_endpoint_halted(2) && !usb_in_endpoint_busy(2) && (UARTDrv_GetCount() > 0)) {
+		// Handle data that is to be sent to the PC
+		// Nothing yet
 
-			uint32_t i;
-			uint8_t *buf = usb_get_in_buffer(2);
-			// Copy from UART buffer to buffer provided by USB
-			// TODO, check length
-			i = UARTDrv_GetReceiveData(buf, EP_2_LEN-1);	// Send one less than the Endpoint length. - saves us doig a 0 length transaction
-			usb_send_in_buffer(2, i);	// Send on endpoint 2, of length i
-			/*
-			// Send a zero-length packet if the transaction length was the same as the endpoint
-			// length. This is for demo purposes. In real life, you only need to do this if the data
-			// you're transferring ends on a multiple of the endpoint length.
-			if (out_buf_len == EP_2_LEN) {
-				// Wait until the IN endpoint can accept it
-				while (usb_in_endpoint_busy(2)){
-				}
-				usb_send_in_buffer(2, 0);
-			}
-			*/
-		}
+		COMMS_handleIncomingProg();
 
-		// Handle data received from the host
-		if (usb_is_configured() && !usb_out_endpoint_halted(2) && usb_out_endpoint_has_data(2)) {
-			const unsigned char *out_buf;
-			size_t out_buf_len;
-
-			// Check for an empty transaction.
-			out_buf_len = usb_get_out_buffer(2, &out_buf);
-			if (out_buf_len <= 0){
-				// Let's avoid gotos
-			}
-			else{
-				UARTDrv_SendBlocking((uint8_t *)out_buf, out_buf_len);
-			}
-
-			LED_toggle();
-
-			usb_arm_out_endpoint(2);
-		}
 
 		#ifndef USB_USE_INTERRUPTS
 		usb_service();
@@ -297,6 +269,11 @@ int8_t app_send_break_callback(uint8_t interface, uint16_t duration)
 	return 0;
 }
 
-
+#ifdef USB_USE_INTERRUPTS
+INTERRUPT(USB1Interrupt){
+	usb_service();
+	COMMS_addToInputBuffer();
+}
+#endif
 
 

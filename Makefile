@@ -17,7 +17,7 @@ MIN_HEAP_SIZE = _min_heap_size=2048
 
 # Provide your source directories
 BUILD_DIR = build
-C_SRC_DIR = src $(P32M_TOOLCHAIN_PATH)/include/support/interrupt src/system src/drivers src/peripherals src/usb
+C_SRC_DIR = src $(P32M_TOOLCHAIN_PATH)/include/support/interrupt src/system src/drivers src/peripherals src/usb src/prog_interface
 INCLUDE_DIR = inc
 ASM_DIR = src/asm
 
@@ -44,7 +44,7 @@ ARCH = -march=m4k -EL -msoft-float
 LDSCRIPT_USED = elf32pic32mx.ld
 endif
 
-
+PIC32PROG_PATH = /opt/pic32/pic32prog_GIT/updated_current/pic32prog
 
 
 
@@ -55,7 +55,9 @@ INTERRUPTSCRIPT = $(P32M_TOOLCHAIN_PATH)/include/support/interrupt/interrupt.S	#
 LDFLAGS =  $(STARTUPSCRIPTS) $(INTERRUPTSCRIPT) $(LDSCRIPTS) -Wl,-undefined,dynamic_lookup -L build -lc -lm -lgcc 
 
 
-INCLUDES = -I$(INCLUDE_DIR) -I$(INCLUDE_DIR)/system -I$(INCLUDE_DIR)/drivers -I$(INCLUDE_DIR)/peripherals -I$(INCLUDE_DIR)/usb -I$(P32M_TOOLCHAIN_PATH)/include -I $(P32M_TOOLCHAIN_PATH)/include/support/interrupt # TODO paths
+INCLUDES = -I$(INCLUDE_DIR) -I$(INCLUDE_DIR)/system -I$(INCLUDE_DIR)/drivers -I$(INCLUDE_DIR)/peripherals \
+-I$(INCLUDE_DIR)/usb -I$(P32M_TOOLCHAIN_PATH)/include -I $(P32M_TOOLCHAIN_PATH)/include/support/interrupt \
+-I$(INCLUDE_DIR)/prog_interface
 C_SOURCES = $(foreach dir, $(C_SRC_DIR), $(wildcard $(dir)/*.c)) 
 ASM_SOURCES = $(foreach dir, $(ASM_DIR), $(wildcard $(dir)/*.s)) 
 MCU_ASM = $(P32M_TOOLCHAIN_PATH)/proc/$(MCU)/$(MCU_ASM_FILE) # TODO BETTER
@@ -68,7 +70,7 @@ OBJ += $(addprefix $(BUILD_DIR)/, $(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 
-CFLAGS = $(ARCH) -nostdlib $(OPTIMIZATION) -D $(FAMILY) -D $(MCU_XC) \
+CFLAGS = $(ARCH) -nostdlib $(OPTIMIZATION) -D $(FAMILY) -D $(MCU_XC) -D USB_USE_INTERRUPTS\
  -Wl,-defsym,$(MIN_HEAP_SIZE) -Wl,-Map=$(BUILD_DIR)/output.map\
 -Wall -ffunction-sections -fdata-sections -Wl,--gc-section -fdollars-in-identifiers #-Werror 
 #

@@ -1645,10 +1645,5 @@ void __attribute__((vector(_USB_1_VECTOR), interrupt(), nomips16)) _USB1Interrup
 	usb_service();
 }
 */
-// TODO, just added the interrupt from isrwrapper.c. Above also supports SHADOW registers, which aren't supported yet.s
-// TODO2, get this working later.
-void USBInterrupt(){
-	usb_service();
-}
 
 #endif

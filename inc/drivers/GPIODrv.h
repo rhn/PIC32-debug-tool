@@ -1,6 +1,14 @@
 #ifndef GPIODRV_H_573f2ca8b43e44209acc90f0f9b7de5d
 #define GPIODRV_H_573f2ca8b43e44209acc90f0f9b7de5d
 
+#include <inttypes.h>
+
+#define GPIO_mode_output_low	0
+#define GPIO_mode_output_high	1
+#define GPIO_mode_input			2
+
+#define GPIO_LOW				0
+#define GPIO_HIGH				1
 
 ////////
 // MX270
@@ -94,8 +102,90 @@
 #define UART_INT_IFS_bits			IFS0bits
 #define UART_INT_IFS_RXIF			U1RXIF
 
+// Pin definitions for programming
+// TMS bit on RE0
+#define PROG_TMS_TRISbits		TRISEbits
+#define PROG_TMS_TRISPIN		TRISE0
+#define PROG_TMS_PORTbits		PORTEbits
+#define PROG_TMS_PORTPIN		RE0
+#define PROG_TMS_LATbits		LATEbits
+#define PROG_TMS_LATPIN			LATE0
+#define PROG_TMS_LATINV			LATEINV
+#define PROG_TMS_LATSET			LATESET
+#define PROG_TMS_LATCLR			LATECLR
+#define PROG_TMS_MASK			(1<<0)
 
+// TCK bit on RE1
+#define PROG_TCK_TRISbits		TRISEbits
+#define PROG_TCK_TRISPIN		TRISE1
+#define PROG_TCK_PORTbits		PORTEbits
+#define PROG_TCK_PORTPIN		RE1
+#define PROG_TCK_LATbits		LATEbits
+#define PROG_TCK_LATPIN			LATE1
+#define PROG_TCK_LATINV			LATEINV
+#define PROG_TCK_LATSET			LATESET
+#define PROG_TCK_LATCLR			LATECLR
+#define PROG_TCK_MASK			(1<<1)
+
+// TDO bit on RE2
+#define PROG_TDO_TRISbits		TRISEbits
+#define PROG_TDO_TRISPIN		TRISE2
+#define PROG_TDO_PORTbits		PORTEbits
+#define PROG_TDO_PORTPIN		RE2
+#define PROG_TDO_LATbits		LATEbits
+#define PROG_TDO_LATPIN			LATE2
+#define PROG_TDO_LATINV			LATEINV
+#define PROG_TDO_LATSET			LATESET
+#define PROG_TDO_LATCLR			LATECLR
+#define PROG_TDO_MASK			(1<<2)
+
+// TDI bit on RE3
+#define PROG_TDI_TRISbits		TRISEbits
+#define PROG_TDI_TRISPIN		TRISE3
+#define PROG_TDI_PORTbits		PORTEbits
+#define PROG_TDI_PORTPIN		RE3
+#define PROG_TDI_LATbits		LATEbits
+#define PROG_TDI_LATPIN			LATE3
+#define PROG_TDI_LATINV			LATEINV
+#define PROG_TDI_LATSET			LATESET
+#define PROG_TDI_LATCLR			LATECLR
+#define PROG_TDI_MASK			(1<<3)
+
+// MCLR bit on RE4
+#define PROG_MCLR_TRISbits		TRISEbits
+#define PROG_MCLR_TRISPIN		TRISE4
+#define PROG_MCLR_PORTbits		PORTEbits
+#define PROG_MCLR_PORTPIN		RE4
+#define PROG_MCLR_LATbits		LATEbits
+#define PROG_MCLR_LATPIN		LATE4
+#define PROG_MCLR_LATINV		LATEINV
+#define PROG_MCLR_LATSET		LATESET
+#define PROG_MCLR_LATCLR		LATECLR
+#define PROG_MCLR_MASK			(1<<4)
 
 #endif
+
+// Function definitons
+void GPIODrv_init();
+
+void GPIODrv_setupPinTMS(uint32_t mode);
+void GPIODrv_setupPinTCK(uint32_t mode);
+void GPIODrv_setupPinTDI(uint32_t mode);
+void GPIODrv_setupPinTDO(uint32_t mode);
+void GPIODrv_setupPinMCLR(uint32_t mode);
+
+void GPIODrv_setStateTMS(uint32_t state);
+void GPIODrv_setStateTCK(uint32_t state);
+void GPIODrv_setStateTDI(uint32_t state);
+void GPIODrv_setStateTDO(uint32_t state);
+void GPIODrv_setStateMCLR(uint32_t state);
+
+uint32_t GPIODrv_getStateTMS();
+uint32_t GPIODrv_getStateTCK();
+uint32_t GPIODrv_getStateTDI();
+uint32_t GPIODrv_getStateTDO();
+uint32_t GPIODrv_getStateMCLR();
+
+
 
 #endif
