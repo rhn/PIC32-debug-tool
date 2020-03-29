@@ -7,6 +7,7 @@
 #include <LED.h>
 #include <UARTDrv.h>
 #include <transport.h>
+#include <GPIODrv.h>
 
 // This file handles communication
 // - USB-UART will be one type.
@@ -234,6 +235,13 @@ void COMMS_addInfoToOutput(){
 	outgoingData.currentPos = startPos + 128;
 }
 
+// Make different later?
+void COMMS_addDataToOutput(uint64_t data){
+	memcpy (&outgoingData.data[outgoingData.currentPos], &data, sizeof(data));
+	memcpy (&outgoingData.data[0], &data, sizeof(data));
+	outgoingData.currentPos = outgoingData.currentPos + sizeof(data);
+}
+
 void COMMS_commandExecutor(){
 	uint32_t counter;
 
@@ -249,6 +257,143 @@ void COMMS_commandExecutor(){
 			COMMS_sendStruct(&outgoingData);
 			COMMS_reinitStruct(&outgoingData, 1);
 			counter = counter + 1;	// These could be defines (lengths)
+		}
+		else if (COMMAND_SET_SPEED == tempBuffer[counter]){
+			// Currently not supported, so skip
+			// Speed will be in 2 bytes (kHz.
+			counter = counter + 3;
+		}
+		else if (COMMAND_SET_PROG_MODE == tempBuffer[counter]){
+			// The mode is in the next byte.
+			transportSetup(tempBuffer[counter+1]);
+			counter = counter + 2;
+		}
+		else if (COMMAND_SET_PIN_IO_MODE == tempBuffer[counter]){
+			// First byte is pin
+			// Second byte is mode (input, output /w high, output / low)
+			if (PIN_TMS == tempBuffer[counter+1]){
+				GPIODrv_setupPinTMS(tempBuffer[counter+2]);
+			}
+			else if (PIN_TCK == tempBuffer[counter+1]){
+				GPIODrv_setupPinTCK(tempBuffer[counter+2]);
+			}
+			else if (PIN_TDI == tempBuffer[counter+1]){
+				GPIODrv_setupPinTDI(tempBuffer[counter+2]);
+			}
+			else if (PIN_TDO == tempBuffer[counter+1]){
+				GPIODrv_setupPinTDO(tempBuffer[counter+2]);
+			}
+			else if (PIN_MCLR == tempBuffer[counter+1]){
+				GPIODrv_setupPinMCLR(tempBuffer[counter+2]);
+			}
+
+			counter = counter + 3;
+		}
+		else if (COMMAND_SET_PIN_WRITE == tempBuffer[counter]){
+			// First byte is pin
+			// Second byte is value (high, low).
+			if (PIN_TMS == tempBuffer[counter+1]){
+				GPIODrv_setStateTMS(tempBuffer[counter+2]);
+			}
+			else if (PIN_TCK == tempBuffer[counter+1]){
+				GPIODrv_setStateTCK(tempBuffer[counter+2]);
+			}
+			else if (PIN_TDI == tempBuffer[counter+1]){
+				GPIODrv_setStateTDI(tempBuffer[counter+2]);
+			}
+			else if (PIN_TDO == tempBuffer[counter+1]){
+				GPIODrv_setStateTDO(tempBuffer[counter+2]);
+			}
+			else if (PIN_MCLR == tempBuffer[counter+1]){
+				GPIODrv_setStateMCLR(tempBuffer[counter+2]);
+			}
+
+			counter = counter + 3;
+		}
+		else if (COMMAND_SET_PIN_READ == tempBuffer[counter]){
+			// First byte is pin
+			uint32_t returnVal = 0;
+			if (PIN_TMS == tempBuffer[counter+1]){
+				returnVal = GPIODrv_getStateTMS();
+			}
+			else if (PIN_TCK == tempBuffer[counter+1]){
+				returnVal = GPIODrv_getStateTCK();
+			}
+			else if (PIN_TDI == tempBuffer[counter+1]){
+				returnVal = GPIODrv_getStateTDI();
+			}
+			else if (PIN_TDO == tempBuffer[counter+1]){
+				returnVal = GPIODrv_getStateTDO();
+			}
+			else if (PIN_MCLR == tempBuffer[counter+1]){
+				returnVal = GPIODrv_getStateMCLR();
+			}
+
+			// TODO implement return.
+
+			counter = counter + 2;
+		}
+		else if (COMMAND_SEND == tempBuffer[counter]){
+			// 4B of TMS_prolog nbits, 4B of TMS_prolog value
+			// 4B of TDI nbits, 8B of TDI value
+			// 4B of TMS_epilog nbits, 4B of TMS_epilog value
+			// 4B of read_flag
+			// TODO optimize later.
+
+			uint32_t tms_prolog_nbits, tms_prolog;
+			uint32_t tdi_nbits;
+			uint64_t tdi;
+			uint32_t tms_epilog_nbits, tms_epilog;
+			uint32_t read_flag;
+
+			uint32_t location = counter + 1;
+
+			volatile uint64_t returnVal = 0;
+
+			// TMS prolog
+			memcpy(&tms_prolog_nbits, &tempBuffer[location], sizeof(tms_prolog_nbits));
+			location = location + sizeof(tms_prolog_nbits);
+			memcpy(&tms_prolog, &tempBuffer[location], sizeof(tms_prolog));
+			location = location + sizeof(tms_prolog);
+
+			// TDI
+			memcpy(&tdi_nbits, &tempBuffer[location], sizeof(tdi_nbits));
+			location = location + sizeof(tdi_nbits);
+			memcpy(&tdi, &tempBuffer[location], sizeof(tdi));
+			location = location + sizeof(tdi);
+
+			// TMS epilog
+			memcpy(&tms_epilog_nbits, &tempBuffer[location], sizeof(tms_epilog_nbits));
+			location = location + sizeof(tms_epilog_nbits);
+			memcpy(&tms_epilog, &tempBuffer[location], sizeof(tms_epilog));
+			location = location + sizeof(tms_epilog);
+
+			// read flag
+			memcpy(&read_flag, &tempBuffer[location], sizeof(read_flag));
+			location = location + sizeof(read_flag);
+
+			counter = counter + 1;
+			counter = counter + sizeof(tms_prolog_nbits) + sizeof(tms_prolog);
+			counter = counter + sizeof(tdi_nbits) + sizeof(tdi);
+			counter = counter + sizeof(tms_epilog_nbits) + sizeof(tms_epilog);
+			counter = counter + sizeof(read_flag);
+
+			if (PROG_MODE_TRISTATE == transport_currentMode){
+				// Do nothing?
+			}
+			else if(PROG_MODE_JTAG == transport_currentMode){
+				returnVal = transportSendJTAG(tms_prolog_nbits, tms_prolog, tdi_nbits, tdi, tms_epilog_nbits, tms_epilog);
+			}
+			else if(PROG_MODE_ICSP == transport_currentMode){
+				returnVal = transportSendICSP(tms_prolog_nbits, tms_prolog, tdi_nbits, tdi, tms_epilog_nbits, tms_epilog);
+			}
+
+			if (read_flag > 0){
+				COMMS_reinitStruct(&outgoingData, 1);
+				COMMS_addDataToOutput(returnVal);
+				COMMS_sendStruct(&outgoingData);
+				COMMS_reinitStruct(&outgoingData, 1);
+			}
 		}
 		else{
 			asm("nop");

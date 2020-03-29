@@ -1,6 +1,8 @@
 #ifndef TRANSPORT_H_1e6ef42163ef4b848869ee2079a96a87
 #define TRANSPORT_H_1e6ef42163ef4b848869ee2079a96a87
 
+#include <inttypes.h>
+
 // Generic header for the transport layer.
 // Selects the appropriate one, depending on the ifdefs
 
@@ -40,7 +42,7 @@
 #define PIN_SET_INPUT		2
 // End.
 
-
+extern uint32_t transport_currentMode;
 
 #if defined(__32MX270F256D__)
 #include <transport_dual_spi.h>

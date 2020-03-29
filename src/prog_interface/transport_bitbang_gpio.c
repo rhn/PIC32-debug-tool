@@ -12,6 +12,8 @@
 
 #if defined(__32MX440F256H__)
 
+uint32_t transport_currentMode = 0;
+
 void transportSetup(uint32_t mode){
 	if (TRANSPORT_MODE_JTAG == mode){
 		// All pinout output except TDO
@@ -20,6 +22,7 @@ void transportSetup(uint32_t mode){
 		GPIODrv_setupPinTDI(GPIO_mode_output_low);
 		GPIODrv_setupPinTDO(GPIO_mode_input);
 		GPIODrv_setupPinMCLR(GPIO_mode_output_high);
+		transport_currentMode = mode;
 	}
 	else if(TRANSPORT_MODE_ICSP == mode){
 		// ICSP works on TMS and TCK pins. But still init TDO and TDI.
@@ -28,6 +31,7 @@ void transportSetup(uint32_t mode){
 		GPIODrv_setupPinTDI(GPIO_mode_input);
 		GPIODrv_setupPinTDO(GPIO_mode_input);
 		GPIODrv_setupPinMCLR(GPIO_mode_output_high);
+		transport_currentMode = mode;
 	}
 	else if(TRANSPORT_MODE_TRISTATE == mode){
 		// Tri-state all pins, disconnect from bus
@@ -36,6 +40,7 @@ void transportSetup(uint32_t mode){
 		GPIODrv_setupPinTDI(GPIO_mode_input);
 		GPIODrv_setupPinTDO(GPIO_mode_input);
 		GPIODrv_setupPinMCLR(GPIO_mode_input);
+		transport_currentMode = mode;
 	}
 
 }
@@ -46,14 +51,14 @@ void transportSetup(uint32_t mode){
 /////////////////////////////////////////////////////////
 
 
-uint64_t transportSendJTAG(	uint8_t tms_header_nbits, uint32_t tms_header_val,
-							uint8_t data_nbits, uint64_t data_val,
-							uint8_t tms_epilogue_nbits, uint32_t tms_epilogue_val){
+uint64_t transportSendJTAG(	uint32_t tms_header_nbits, uint32_t tms_header_val,
+							uint32_t data_nbits, uint64_t data_val,
+							uint32_t tms_epilogue_nbits, uint32_t tms_epilogue_val){
 
 	// All data is output (and received!) LSB first
 
-	uint64_t returnVal = 0;
-	uint32_t counterOfBits = 0;
+	volatile uint64_t returnVal = 0;
+	volatile uint32_t counterOfBits = 0;
 
 	// TMS header
 	for (;tms_header_nbits>0; tms_header_nbits--){
@@ -75,7 +80,7 @@ uint64_t transportSendJTAG(	uint8_t tms_header_nbits, uint32_t tms_header_val,
 		}
 		GPIODrv_setStateTCK(GPIO_HIGH);
 		// Nops?
-		returnVal = (returnVal >> 1) & (GPIODrv_getStateTDO() ? ((uint64_t)1<<63): 0);
+		returnVal = (returnVal >> 1) | (GPIODrv_getStateTDO() ? ((uint64_t)1<<63): 0);
 		counterOfBits++;
 		GPIODrv_setStateTCK(GPIO_LOW);
 		data_val = data_val >> 1;				// Remove the sent bit
@@ -96,15 +101,26 @@ uint64_t transportSendJTAG(	uint8_t tms_header_nbits, uint32_t tms_header_val,
 	return returnVal;
 }
 
-uint64_t transportSendICSP(uint8_t tms_header_nbits, uint32_t tms_header_val,
-		uint8_t data_nbits, uint64_t data_val,
-		uint8_t tms_epilogue_nbits, uint32_t tms_epilogue_val){
+uint64_t transportSendICSP(	uint32_t tms_header_nbits, uint32_t tms_header_val,
+							uint32_t data_nbits, uint64_t data_val,
+							uint32_t tms_epilogue_nbits, uint32_t tms_epilogue_val){
 
 	// All data is output (and received!) LSB first
 	// Remember - communication on TMS and TCK only
 
-	uint64_t returnVal = 0;
-	uint32_t counterOfBits = 0;
+	volatile uint64_t returnVal = 0;
+	volatile uint32_t counterOfBits = 0;
+	volatile wtfTemp = tms_header_val;
+	volatile wtfTempTwo = data_val;
+	volatile wtfTempThree = tms_epilogue_val;
+	volatile wtfTempFour = tms_header_nbits;
+	volatile wtfTempFive = data_nbits;
+	volatile wtfTempSix = tms_epilogue_nbits;
+
+
+	if (tms_header_val == 0x1F){
+		asm("nop");
+	}
 
 	// TMS header
 	for (;tms_header_nbits>0; tms_header_nbits--){
@@ -127,7 +143,7 @@ uint64_t transportSendICSP(uint8_t tms_header_nbits, uint32_t tms_header_val,
 		// Read TDO bit
 		GPIODrv_setStateTCK(GPIO_HIGH);
 		if (tms_header_nbits == 1){
-			returnVal = (returnVal >> 1) & (GPIODrv_getStateTMS() ? ((uint64_t)1<<63): 0);
+			returnVal = (returnVal >> 1) | (GPIODrv_getStateTMS() ? ((uint64_t)1<<63): 0);
 			counterOfBits++;
 		}
 		GPIODrv_setStateTCK(GPIO_LOW);
@@ -166,7 +182,7 @@ uint64_t transportSendICSP(uint8_t tms_header_nbits, uint32_t tms_header_val,
 		// Read TDO bit. Don't read on last output bit, special case
 		GPIODrv_setStateTCK(GPIO_HIGH);
 		if (data_nbits > 1){
-			returnVal = (returnVal >> 1) & (GPIODrv_getStateTMS() ? ((uint64_t)1<<63): 0);
+			returnVal = (returnVal >> 1) | (GPIODrv_getStateTMS() ? ((uint64_t)1<<63): 0);
 			counterOfBits++;
 		}
 		GPIODrv_setStateTCK(GPIO_LOW);
@@ -179,7 +195,7 @@ uint64_t transportSendICSP(uint8_t tms_header_nbits, uint32_t tms_header_val,
 	}
 
 	// TMS epilogue. Has one bit less, because of TMS bit in code above!
-	for (;tms_epilogue_nbits; tms_epilogue_nbits--){
+	for (;tms_epilogue_nbits>0; tms_epilogue_nbits--){
 
 		// Send TDI
 		GPIODrv_setStateTCK(GPIO_HIGH);
@@ -199,9 +215,15 @@ uint64_t transportSendICSP(uint8_t tms_header_nbits, uint32_t tms_header_val,
 		GPIODrv_setStateTCK(GPIO_HIGH);
 		tms_epilogue_val = tms_epilogue_val >> 1;				// Remove the sent bit
 		GPIODrv_setStateTCK(GPIO_LOW);
+
+		// Reset TMS direction
+		GPIODrv_setupPinTMS(GPIO_mode_output_low);	// Grr.
 	}
 
-	return 0;
+
+	returnVal = returnVal >> (64 - counterOfBits);
+
+	return returnVal;
 }
 
 

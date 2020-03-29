@@ -21,11 +21,11 @@ void GPIODrv_setupPinTMS(uint32_t mode){
 	}
 	else if (mode == GPIO_mode_output_high){
 		GPIODrv_setStateTMS(GPIO_HIGH);			// Preset state
-		PROG_TMS_TRISbits.PROG_TMS_TRISPIN = 1;	// 0 is output
+		PROG_TMS_TRISbits.PROG_TMS_TRISPIN = 0;	// 0 is output
 	}
 	else if (mode == GPIO_mode_output_low){
 		GPIODrv_setStateTMS(GPIO_LOW);			// Preset state
-		PROG_TMS_TRISbits.PROG_TMS_TRISPIN = 1;	// 1 is input
+		PROG_TMS_TRISbits.PROG_TMS_TRISPIN = 0;	// 0 is output
 	}
 }
 
@@ -35,11 +35,11 @@ void GPIODrv_setupPinTCK(uint32_t mode){
 	}
 	else if (mode == GPIO_mode_output_high){
 		PROG_TCK_LATSET = PROG_TCK_MASK;		// Preset state
-		PROG_TCK_TRISbits.PROG_TCK_TRISPIN = 1;	// 0 is output
+		PROG_TCK_TRISbits.PROG_TCK_TRISPIN = 0;	// 0 is output
 	}
 	else if (mode == GPIO_mode_output_low){
 		PROG_TCK_LATCLR = PROG_TCK_MASK;		// Preset state
-		PROG_TCK_TRISbits.PROG_TCK_TRISPIN = 1;	// 1 is input
+		PROG_TCK_TRISbits.PROG_TCK_TRISPIN = 0;	// 0 is output
 	}
 }
 
@@ -49,11 +49,11 @@ void GPIODrv_setupPinTDI(uint32_t mode){
 	}
 	else if (mode == GPIO_mode_output_high){
 		PROG_TDI_LATSET = PROG_TDI_MASK;		// Preset state
-		PROG_TDI_TRISbits.PROG_TDI_TRISPIN = 1;	// 0 is output
+		PROG_TDI_TRISbits.PROG_TDI_TRISPIN = 0;	// 0 is output
 	}
 	else if (mode == GPIO_mode_output_low){
 		PROG_TDI_LATCLR = PROG_TDI_MASK;		// Preset state
-		PROG_TDI_TRISbits.PROG_TDI_TRISPIN = 1;	// 1 is input
+		PROG_TDI_TRISbits.PROG_TDI_TRISPIN = 0;	// 0 is output
 	}
 }
 
@@ -63,11 +63,11 @@ void GPIODrv_setupPinTDO(uint32_t mode){
 	}
 	else if (mode == GPIO_mode_output_high){
 		PROG_TDO_LATSET = PROG_TDO_MASK;		// Preset state
-		PROG_TDO_TRISbits.PROG_TDO_TRISPIN = 1;	// 0 is output
+		PROG_TDO_TRISbits.PROG_TDO_TRISPIN = 0;	// 0 is output
 	}
 	else if (mode == GPIO_mode_output_low){
 		PROG_TDO_LATCLR = PROG_TDO_MASK;		// Preset state
-		PROG_TDO_TRISbits.PROG_TDO_TRISPIN = 1;	// 1 is input
+		PROG_TDO_TRISbits.PROG_TDO_TRISPIN = 0;	// 0 is output
 	}
 }
 
@@ -77,11 +77,11 @@ void GPIODrv_setupPinMCLR(uint32_t mode){
 	}
 	else if (mode == GPIO_mode_output_high){
 		PROG_MCLR_LATSET = PROG_MCLR_MASK;			// Preset state
-		PROG_MCLR_TRISbits.PROG_MCLR_TRISPIN = 1;	// 0 is output
+		PROG_MCLR_TRISbits.PROG_MCLR_TRISPIN = 0;	// 0 is output
 	}
 	else if (mode == GPIO_mode_output_low){
 		PROG_MCLR_LATCLR = PROG_MCLR_MASK;			// Preset state
-		PROG_MCLR_TRISbits.PROG_MCLR_TRISPIN = 1;	// 1 is input
+		PROG_MCLR_TRISbits.PROG_MCLR_TRISPIN = 0;	// 0 is output
 	}
 }
 
@@ -161,7 +161,7 @@ uint32_t GPIODrv_getStateTDI(){
 }
 
 uint32_t GPIODrv_getStateTDO(){
-	if (PROG_TDI_PORTbits.PROG_TDI_PORTPIN){
+	if (PROG_TDO_PORTbits.PROG_TDO_PORTPIN){
 		return 1;
 	}
 	return 0;
