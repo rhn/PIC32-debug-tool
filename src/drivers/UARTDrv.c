@@ -28,7 +28,7 @@ INTERRUPT(UART1Interrupt){
 		receiveArray[head++] = UART_RX_reg;
 	}
 
-	LED_toggle();
+	//LED_toggle();
 
 	UART_INT_IFS_bits.UART_INT_IFS_RXIF = 0;
 }

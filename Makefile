@@ -82,10 +82,6 @@ all: $(TARGET).hex
 flash:
 	$(PIC32PROG_PATH)/pic32prog $(BUILD_DIR)/$(TARGET).hex -D -S -s 8000
 
-flash_icsp:
-	$(PIC32PROG_PATH)/pic32prog $(BUILD_DIR)/$(TARGET).hex -D -S -i ICSP -
-s 8000
-
 
 # For debug, recursively call the makefile again, with the DEBUG varible
 # set to -g, so Debug symbols get built, and -D to define DEBUG_BUILD

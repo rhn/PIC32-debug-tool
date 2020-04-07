@@ -23,8 +23,6 @@
 #include <usb_cdc.h>
 
 
-
-
 volatile char tempArray[128];
 volatile uint8_t lengthArray = 0;
 #ifdef MULTI_CLASS_DEVICE
@@ -97,7 +95,7 @@ static void send_string_sync(uint8_t endpoint, const char *str)
 */
 
 int main(){
-
+	bool needs_hello = false;
 
 	setup();
 	usb_init();
@@ -108,14 +106,17 @@ int main(){
 	for(;;){
 
 		// Send data to the PC if anything in buffer
-		if (usb_is_configured() && !usb_in_endpoint_halted(2) && !usb_in_endpoint_busy(2) && (UARTDrv_GetCount() > 0)) {
-
+		if (usb_is_configured() && !usb_in_endpoint_halted(2) && !usb_in_endpoint_busy(2)) {
 			uint32_t i;
 			uint8_t *buf = usb_get_in_buffer(2);
-			// Copy from UART buffer to buffer provided by USB
-			// TODO, check length
-			i = UARTDrv_GetReceiveData(buf, EP_2_LEN-1);	// Send one less than the Endpoint length. - saves us doig a 0 length transaction
-			usb_send_in_buffer(2, i);	// Send on endpoint 2, of length i
+			if (needs_hello) {
+				const char *hello = "hello";
+				strncpy(buf, hello, strlen(hello));
+				usb_send_in_buffer(2, strlen(hello));
+				needs_hello = false;
+			}
+			LED_toggle();
+//			LED_setState(enqueued_hello);
 			/*
 			// Send a zero-length packet if the transaction length was the same as the endpoint
 			// length. This is for demo purposes. In real life, you only need to do this if the data
@@ -131,20 +132,15 @@ int main(){
 
 		// Handle data received from the host
 		if (usb_is_configured() && !usb_out_endpoint_halted(2) && usb_out_endpoint_has_data(2)) {
+			needs_hello = true;
 			const unsigned char *out_buf;
 			size_t out_buf_len;
-
+			LED_toggle();
 			// Check for an empty transaction.
 			out_buf_len = usb_get_out_buffer(2, &out_buf);
-			if (out_buf_len <= 0){
-				// Let's avoid gotos
+			if (out_buf_len > 0){
+				// send out echo
 			}
-			else{
-				UARTDrv_SendBlocking((uint8_t *)out_buf, out_buf_len);
-			}
-
-			LED_toggle();
-
 			usb_arm_out_endpoint(2);
 		}
 
