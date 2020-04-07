@@ -58,7 +58,7 @@ void timer_reset() {
 
 // ~20 min in timer ticks
 //const uint32_t timer_trigger = (20 * 60) * 9765.625;
-const uint32_t timer_trigger = 10 * 60 * 9765.625;
+const uint32_t timer_trigger = 10 * 60	 * 9765.625;
 
 // One second to hold
 const uint32_t timer_hold = 9765.625;
@@ -136,6 +136,7 @@ void to_string_32b(char buf[8], uint32_t data) {
 
 int main(){
 	bool needs_info = false;
+	uint32_t last_check = 0;
 	setup();
 	usb_init();
 
@@ -162,7 +163,7 @@ int main(){
 			if (needs_info) {
 				const char *pre = "0x";
 				strncpy(buf, pre, strlen(pre));
-				to_string_32b(buf + strlen(pre), time);
+				to_string_32b(buf + strlen(pre), last_check);
 				const char *post = "\r\n";
 				strncpy(buf + strlen(pre) + 8, post, strlen(post));
 				usb_send_in_buffer(2, strlen(pre) + 8 + strlen(post));
@@ -184,6 +185,7 @@ int main(){
 		// Handle data received from the host
 		if (usb_is_configured() && !usb_out_endpoint_halted(2) && usb_out_endpoint_has_data(2)) {
 			needs_info = true;
+			last_check = time;
 			const unsigned char *out_buf;
 			size_t out_buf_len;
 			// Check for an empty transaction.
